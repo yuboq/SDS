@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/yuboq/sds/issues"
   },
-  "homepage": "https://github.com/yuboq/sds#readme"
+  "homepage": "https://github.com/yuboq/sds#readme",
+  "dependencies": {
+    "stage-js": "^0.8.11"
+  }
 }
