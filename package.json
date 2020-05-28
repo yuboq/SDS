@@ -1,0 +1,19 @@
+{
+  "name": "sds",
+  "version": "1.0.0",
+  "description": "This is a social distancing simulator. Change this!",
+  "main": "index.js",
+  "scripts": {
+    "test": "--test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yuboq/sds.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/yuboq/sds/issues"
+  },
+  "homepage": "https://github.com/yuboq/sds#readme"
+}
