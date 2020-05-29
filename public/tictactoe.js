@@ -7,6 +7,10 @@ function Game(ui) {
     return turn >= 0 && turn < 9;
   };
 
+  this.banner = function() {
+    return null;
+  };
+
   this.init = function() {
     console.log('game init');
     cells = [];
@@ -27,6 +31,7 @@ function Game(ui) {
     if (cells.length == 0) {
       this.init();
     }
+    ui.gameover.hide();
     turn = 0;
     for (var i = -1; i <= 1; i++) {
       for (var j = -1; j <= 1; j++) {
@@ -111,13 +116,30 @@ Stage(function(stage) {
     },
     win : function(row, sign) {
       console.log('ui win');
+      this.drawtext (sign+" win!");
+
       for (var i = 0; i < row.length; i++) {
         row[i].ui.win();
       }
     },
     draw : function() {
       console.log('ui draw');
+      this.drawtext("it's a draw!");
+    },
+
+    gameover : Stage
+    .string('text')
+    .pin({offsetX :-15,
+      offsetY : -20,
+      scale : 0.2 })
+    .appendTo(stage),
+
+    drawtext: function(whatever) {
+
+      this.gameover.value (whatever).show()
+
     }
+
   });
 
   game.start();
@@ -169,6 +191,19 @@ Stage({
     '-' : Stage.canvas(function(ctx) {
       var ratio = 20;
       this.size(10, 10, ratio);
-    })
+    }),
+
+    text : function(d) {
+      d += '';
+      return Stage.canvas(function(ctx) {
+        var ratio = 20;
+        this.size(16, 24, ratio);
+        ctx.scale(ratio, ratio);
+        ctx.font = 'bold 24px monospace';
+        ctx.fillStyle = '#000';
+        ctx.textBaseline = 'top';
+        ctx.fillText(d, 0, 1);
+      })},
+
   }
 });
