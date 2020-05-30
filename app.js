@@ -12,7 +12,7 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use("/stagejs", express.static(path.join(__dirname, 'node_modules/stage-js/dist/')));
+app.use("/stagejs", express.static(path.join(__dirname, 'node_modules/stage-js/')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
