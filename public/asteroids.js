@@ -152,6 +152,13 @@ function Physics(ui) {
   function rand(value) {
     return (Math.random() - 0.5) * (value || 1);
   }
+
+  //If player hits out of bounds, game over for that player
+  function outofbounds (body) {
+    var p = body.getPosition();
+    
+  }
+
   this.start = start;
   this.world = world;
   this.state = state;
@@ -163,6 +170,10 @@ function Physics(ui) {
 
 Stage(function(stage) {
   var activeKeys = {};
+
+  Stage.image('bg').pin ('align', 0.5).appendTo(stage);
+  
+
   var KEY_NAMES = {
     32 : 'start',
     37 : 'right',
@@ -257,6 +268,21 @@ Stage(function(stage) {
 
 Stage({
   textures : {
+    'bg' : Stage.canvas(function(ctx) {
+      var ratio = 200;
+      this.size(16, 9, ratio);
+      ctx.scale(200, 200);
+      ctx.moveTo(1, 1);
+      ctx.lineTo(1, 9);
+      ctx.lineTo(16, 9);
+      ctx.lineTo(16, 1);
+      ctx.lineTo (1,1);
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#999';
+      ctx.stroke();
+    }),
+
     text : function(d) {
       d += '';
       return Stage.canvas(function(ctx) {
@@ -269,5 +295,6 @@ Stage({
         ctx.fillText(d, 0, 1);
       });
     }
+
   }
 });
