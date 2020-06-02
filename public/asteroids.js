@@ -29,9 +29,9 @@ function Physics(ui) {
   world = pl.World();
   world.on('pre-solve', function(contact) {
 
-    if (true){ 
+    if (true){
       dummy(contact);
-      
+
       return;
     }
     var fixtureA = contact.getFixtureA();
@@ -103,21 +103,21 @@ function Physics(ui) {
     globalTime += dt;
     if (yourBody) {
       if (ui.activeKeys.left && !ui.activeKeys.right) {
-        var f = yourBody.getWorldVector(Vec2(10.0, 0.0));
+        var f = Vec2(10.0, 0.0);
         var p = yourBody.getWorldCenter();
         yourBody.applyLinearImpulse(f, p, true);
       } else if (ui.activeKeys.right && !ui.activeKeys.left) {
-        var f = yourBody.getWorldVector(Vec2(-10.0, 0.0));
+        var f = Vec2(-10.0, 0.0);
         var p = yourBody.getWorldCenter();
         yourBody.applyLinearImpulse(f, p, true);
       }
       if (ui.activeKeys.up && !ui.activeKeys.down) {
-        var f = yourBody.getWorldVector(Vec2(0.0, -10.0));
+        var f = Vec2(0.0, -10.0);
         var p = yourBody.getWorldCenter();
         yourBody.applyLinearImpulse(f, p, true);
       }
       if (ui.activeKeys.down && !ui.activeKeys.up) {
-        var f = yourBody.getWorldVector(Vec2(0.0, 10.0));
+        var f = Vec2(0.0, 10.0);
         var p = yourBody.getWorldCenter();
         yourBody.applyLinearImpulse(f, p, true);
       }
@@ -181,7 +181,7 @@ function Physics(ui) {
   function makeCirclePoints (radius, numpoints=360){
     if (numpoints < 3) return;
     var output = [];
-    
+
     var angle = 360.0/numpoints;
     for (i = 0; i < numpoints; ++i){
       var currAngle = angle*i;
@@ -210,7 +210,7 @@ function Physics(ui) {
   //If player hits out of bounds, game over for that player
   function outofbounds (body) {
     var p = body.getPosition();
-    
+
   }
 
   this.start = start;
@@ -224,7 +224,7 @@ function Physics(ui) {
 
 Stage(function(stage) {
   var activeKeys = {};
-  
+
 
   var KEY_NAMES = {
     32 : 'start',
