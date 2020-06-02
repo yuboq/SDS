@@ -57,11 +57,13 @@ function Physics(ui) {
 
     var youCrashed = bodyA == borderWall || bodyB == borderWall;
 
+    /*
     if (youCrashed) {
       setTimeout(function () {
         crash(borderWall, bodyA == borderWall ? bodyB : bodyA);
       }, 1);
     }
+    */
   }
 
   function start() {
@@ -82,6 +84,7 @@ function Physics(ui) {
       angularDamping : 2.0,
       linearDamping : 0.5,
       position : Vec2(),
+      bullet : true
     });
 
     yourBody.createFixture(pl.Circle(SIZE), {
