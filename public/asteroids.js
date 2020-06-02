@@ -138,7 +138,7 @@ function Physics(ui) {
       otherBody.applyLinearImpulse(f, p, true);
     }
   }
-  
+
   function tick(dt) {
     if (state.gameover) {
       return;
@@ -152,7 +152,7 @@ function Physics(ui) {
     //console.log(yourBody.getWorldCenter());
 
   }
-  
+
   function shouldIshrink()
   {
 
@@ -165,17 +165,17 @@ function Physics(ui) {
       newCircle = createNewCircle(currentCircle);
       shrinkSteps = NUMSTEPS;
     }else{
-      
+
       currentCircle = shrinkCircle (currentCircle, newCircle);
-      makeWalls (currentCircle);
+      makeWalls(currentCircle);
       shrinkSteps--;
     }
   }
 
   function shrinkCircle (cc, nc){
     var nr = cc.radius- (cc.radius - nc.radius)/shrinkSteps;
-    var x = cc.position.x - (cc.position.x - nc.position.x);
-    var y = cc.position.y - (cc.position.y - nc.position.y);
+    var x = cc.position.x + (nc.position.x - cc.position.x)/shrinkSteps;
+    var y = cc.position.y + (nc.position.y - cc.position.y)/shrinkSteps;
     return {
       position : Vec2(x, y),
       radius : nr
@@ -183,21 +183,34 @@ function Physics(ui) {
   }
 
   function createNewCircle (p){
-    var r = p.radius*0.75;
+    var r = p.radius*0.80;
     var pr = p.radius- r;
     var angle = rand (Math.PI *2);
-    var x = Math.sin (angle) * rand (pr) + p.x;
-    var y = Math.cos (angle) * rand (pr) + p.y;
-
+    var maxX = Math.sin (angle) * pr;
+    var maxY = Math.cos (angle) * pr;
+    var x = normalDistRandom() * maxX + p.position.x;
+    var y = normalDistRandom() * maxY + p.position.y;
+    debugger;
     return {
-      position: Vec2 (x,y), 
+      position: Vec2(x,y),
       radius: r
     };
   }
+
+  function normalDistRandom() {
+    let u = 0, v = 0;
+    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while(v === 0) v = Math.random();
+    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    num = num / 10.0 + 0.5; // Translate to 0 -> 1
+    if (num > 1 || num < 0) return randn_bm(); // resample between 0 and 1
+    return num;
+  }
+
   function setupBots() {
     otherBodies = [];
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < 0; i++) {
       var yourPosition = yourBody.getPosition();
       var x = yourPosition.x;
       var y = yourPosition.y;
@@ -233,22 +246,28 @@ function Physics(ui) {
   }
 
   function makeWalls (cc) {
-    var circlePoints = makeCirclePoints(cc.radius);
-    if (!borderWall){
-      borderWall = world.createBody();
-      var fixture = body.getFixtureList
-    }
+    var circlePoints = makeCirclePoints(cc.radius, cc.position.x, cc.position.y);
 
-    var newbwf = borderWall.createFixture(pl.Chain(circlePoints), {
+    if (!borderWall) {
+      borderWall = world.createBody();
+    }
+    borderWall.createFixture(pl.Chain(circlePoints), {
       density: 0,
       filterCategoryBits : WALLS,
       filterMaskBits : YOU | OTHER
     });
-
+    var fixA = borderWall.getFixtureList();
+    var limit = 5;
+    while (limit-- > 0) {
+      fixA = fixA ? fixA.getNext() : fixA
+    }
+    if (fixA) {
+      borderWall.destroyFixture(fixA);
+    }
     return borderWall;
   }
 
-  function makeCirclePoints (radius, numpoints=100){
+  function makeCirclePoints (radius, p_x, p_y, numpoints=100){
     if (numpoints < 3) return;
     var output = [];
 
@@ -256,8 +275,8 @@ function Physics(ui) {
 
     for (i = 0; i < numpoints; ++i){
       var currAngle = angle*i;
-      var y = Math.sin (currAngle) * radius;
-      var x = Math.cos (currAngle) * radius;
+      var y = Math.sin (currAngle) * radius + p_x;
+      var x = Math.cos (currAngle) * radius + p_y;
       output.push(Vec2 (x,y));
     }
     output.push(output[0]);
