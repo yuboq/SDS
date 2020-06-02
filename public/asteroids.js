@@ -2,10 +2,12 @@ function Physics(ui) {
   var pl = planck, Vec2 = pl.Vec2;
   var YOU = 2;
   var OTHER = 4;
+  var WALLS = 8;
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
 
   var SIZE = 0.30;
+  var WALLSIZE = 1;
   var state = {
     gameover: true,
     startGame: function() {
@@ -22,9 +24,16 @@ function Physics(ui) {
   var world;
   var otherBodies = [];
   var yourBody;
+  var borderWall;
 
   world = pl.World();
   world.on('pre-solve', function(contact) {
+
+    if (true){ 
+      dummy(contact);
+      
+      return;
+    }
     var fixtureA = contact.getFixtureA();
     var fixtureB = contact.getFixtureB();
 
@@ -39,10 +48,27 @@ function Physics(ui) {
     }
   });
 
+  function dummy(contact) {
+    var fixtureA = contact.getFixtureA();
+    var fixtureB = contact.getFixtureB();
+
+    var bodyA = contact.getFixtureA().getBody();
+    var bodyB = contact.getFixtureB().getBody();
+
+    var youCrashed = bodyA == borderWall || bodyB == borderWall;
+
+    if (youCrashed) {
+      setTimeout(function () {
+        crash(borderWall, bodyA == borderWall ? bodyB : bodyA);
+      }, 1);
+    }
+  }
+
   function start() {
     state.startGame();
     setupYou();
     setupBots();
+    makeWalls();
   }
 
   function end() {
@@ -61,7 +87,7 @@ function Physics(ui) {
     yourBody.createFixture(pl.Circle(SIZE), {
       density : 1000,
       filterCategoryBits : YOU,
-      filterMaskBits : OTHER
+      filterMaskBits : OTHER | WALLS
     });
   }
 
@@ -93,7 +119,7 @@ function Physics(ui) {
         yourBody.applyLinearImpulse(f, p, true);
       }
     }
-    console.log(yourBody.getWorldCenter());
+    //console.log(yourBody.getWorldCenter());
     for (var i = 0; i !== otherBodies.length; i++) {
       otherBody = otherBodies[i]
       var f = otherBody.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
@@ -133,9 +159,34 @@ function Physics(ui) {
     otherBody.createFixture(pl.Circle(SIZE), {
       density : 1000,
       filterCategoryBits : OTHER,
-      filterMaskBits : YOU
+      filterMaskBits : YOU | WALLS
     });
     return otherBody;
+  }
+
+  function makeWalls (x,y) {
+    var circlePoints = makeCirclePoints(1);
+    borderWall = world.createBody();
+    borderWall.createFixture(pl.Chain(circlePoints), {
+      density: 0,
+      filterCategoryBits : WALLS,
+      filterMaskBits : YOU | OTHER
+    });
+    return borderWall;
+  }
+
+  function makeCirclePoints (radius, numpoints=360){
+    if (numpoints < 3) return;
+    var output = [];
+    
+    var angle = 360.0/numpoints;
+    for (i = 0; i < numpoints; ++i){
+      var currAngle = angle*i;
+      var y = Math.sin (currAngle) * radius;
+      var x = Math.cos (currAngle) * radius;
+      output.push(Vec2 (x,y));
+    }
+    return output;
   }
 
   function crash(you, other) {
@@ -170,8 +221,6 @@ function Physics(ui) {
 
 Stage(function(stage) {
   var activeKeys = {};
-
-  Stage.image('bg').pin ('align', 0.5).appendTo(stage);
   
 
   var KEY_NAMES = {
@@ -268,20 +317,6 @@ Stage(function(stage) {
 
 Stage({
   textures : {
-    'bg' : Stage.canvas(function(ctx) {
-      var ratio = 200;
-      this.size(16, 9, ratio);
-      ctx.scale(200, 200);
-      ctx.moveTo(1, 1);
-      ctx.lineTo(1, 9);
-      ctx.lineTo(16, 9);
-      ctx.lineTo(16, 1);
-      ctx.lineTo (1,1);
-      ctx.lineWidth = 5;
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = '#999';
-      ctx.stroke();
-    }),
 
     text : function(d) {
       d += '';
