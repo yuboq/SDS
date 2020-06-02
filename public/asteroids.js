@@ -5,9 +5,10 @@ function Physics(ui) {
   var WALLS = 8;
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
+  var NUMSTEPS = 100;
 
   var SIZE = 0.30;
-  var WALLSIZE = 1;
+  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function() {
@@ -25,7 +26,15 @@ function Physics(ui) {
   var otherBodies = [];
   var yourBody;
   var borderWall;
-
+  var globalTime = 0;
+  var lastShrinkTime = globalTime;
+  var shrinkSteps = NUMSTEPS;
+  var currentCircle = {
+    radius : WALLRADIUS,
+    position : Vec2(0,0)
+  };
+  var newCircle = currentCircle;
+  var bwf; //borderwall fixture
   world = pl.World();
   world.on('pre-solve', function(contact) {
 
@@ -57,6 +66,7 @@ function Physics(ui) {
 
     var youCrashed = bodyA == borderWall || bodyB == borderWall;
 
+
     /*
     if (youCrashed) {
       setTimeout(function () {
@@ -70,7 +80,7 @@ function Physics(ui) {
     state.startGame();
     setupYou();
     setupBots();
-    makeWalls();
+    makeWalls(currentCircle);
   }
 
   function end() {
@@ -94,13 +104,9 @@ function Physics(ui) {
     });
   }
 
-  var globalTime = 0;
 
-  function tick(dt) {
-    if (state.gameover) {
-      return;
-    }
-    globalTime += dt;
+
+  function updateYou (){
     if (yourBody) {
       if (ui.activeKeys.left && !ui.activeKeys.right) {
         var f = Vec2(10.0, 0.0);
@@ -122,7 +128,9 @@ function Physics(ui) {
         yourBody.applyLinearImpulse(f, p, true);
       }
     }
-    //console.log(yourBody.getWorldCenter());
+  }
+
+  function moveOtherBody(){
     for (var i = 0; i !== otherBodies.length; i++) {
       otherBody = otherBodies[i]
       var f = otherBody.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
@@ -130,7 +138,62 @@ function Physics(ui) {
       otherBody.applyLinearImpulse(f, p, true);
     }
   }
+  
+  function tick(dt) {
+    if (state.gameover) {
+      return;
+    }
+    globalTime += dt;
+    updateYou ();
+    moveOtherBody();
+    shouldIshrink();
+    //console.log (new Date());
+    //console.log (globalTime);
+    //console.log(yourBody.getWorldCenter());
 
+  }
+  
+  function shouldIshrink()
+  {
+
+    if (globalTime - lastShrinkTime <100) {
+      return;
+    }
+    lastShrinkTime = globalTime;
+
+    if (!shrinkSteps){
+      newCircle = createNewCircle(currentCircle);
+      shrinkSteps = NUMSTEPS;
+    }else{
+      
+      currentCircle = shrinkCircle (currentCircle, newCircle);
+      makeWalls (currentCircle);
+      shrinkSteps--;
+    }
+  }
+
+  function shrinkCircle (cc, nc){
+    var nr = cc.radius- (cc.radius - nc.radius)/shrinkSteps;
+    var x = cc.position.x - (cc.position.x - nc.position.x);
+    var y = cc.position.y - (cc.position.y - nc.position.y);
+    return {
+      position : Vec2(x, y),
+      radius : nr
+    };
+  }
+
+  function createNewCircle (p){
+    var r = p.radius*0.75;
+    var pr = p.radius- r;
+    var angle = rand (Math.PI *2);
+    var x = Math.sin (angle) * rand (pr) + p.x;
+    var y = Math.cos (angle) * rand (pr) + p.y;
+
+    return {
+      position: Vec2 (x,y), 
+      radius: r
+    };
+  }
   function setupBots() {
     otherBodies = [];
 
@@ -141,8 +204,9 @@ function Physics(ui) {
 
       while (Math.abs(x - yourPosition.x) < SIZE * 2
       && Math.abs(y - yourPosition.y) < SIZE * 2) {
-        x = rand(SPACE_WIDTH);
-        y = rand(SPACE_HEIGHT);
+        var angle = rand (Math.PI * 2);
+        x = rand (WALLRADIUS-SIZE) * Math.sin(angle);
+        y = rand (WALLRADIUS-SIZE) * Math.cos(angle);
       }
 
       var vx = rand(1);
@@ -157,38 +221,46 @@ function Physics(ui) {
       position : Vec2(x, y),
       type : 'dynamic',
       linearDamping : 1.0,
+      bullet : true
     });
     otherBodies.push(otherBody);
     otherBody.createFixture(pl.Circle(SIZE), {
       density : 1000,
       filterCategoryBits : OTHER,
-      filterMaskBits : YOU | WALLS
+      filterMaskBits : YOU | WALLS | OTHER
     });
     return otherBody;
   }
 
-  function makeWalls (x,y) {
-    var circlePoints = makeCirclePoints(1);
-    borderWall = world.createBody();
-    borderWall.createFixture(pl.Chain(circlePoints), {
+  function makeWalls (cc) {
+    var circlePoints = makeCirclePoints(cc.radius);
+    if (!borderWall){
+      borderWall = world.createBody();
+      var fixture = body.getFixtureList
+    }
+
+    var newbwf = borderWall.createFixture(pl.Chain(circlePoints), {
       density: 0,
       filterCategoryBits : WALLS,
       filterMaskBits : YOU | OTHER
     });
+
     return borderWall;
   }
 
-  function makeCirclePoints (radius, numpoints=360){
+  function makeCirclePoints (radius, numpoints=100){
     if (numpoints < 3) return;
     var output = [];
 
-    var angle = 360.0/numpoints;
+    var angle = Math.PI*2/numpoints;
+
     for (i = 0; i < numpoints; ++i){
       var currAngle = angle*i;
       var y = Math.sin (currAngle) * radius;
       var x = Math.cos (currAngle) * radius;
       output.push(Vec2 (x,y));
     }
+    output.push(output[0]);
     return output;
   }
 
