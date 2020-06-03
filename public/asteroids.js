@@ -1,8 +1,7 @@
 function Physics(ui) {
   var pl = planck, Vec2 = pl.Vec2;
-  var YOU = 2;
-  var OTHER = 4;
-  var WALLS = 8;
+  var PLAYER = 2;
+  var WALLS = 4;
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
   var NUMSTEPS = 100;
@@ -11,13 +10,13 @@ function Physics(ui) {
   var WALLRADIUS = 5;
   var state = {
     gameover: true,
-    startGame: function() {
+    startGame: function () {
       this.gameover = false;
     },
-    crash: function() {
+    crash: function () {
       this.endGame();
     },
-    endGame: function() {
+    endGame: function () {
       this.gameover = true;
     }
   };
@@ -30,55 +29,15 @@ function Physics(ui) {
   var lastShrinkTime = globalTime;
   var shrinkSteps = NUMSTEPS;
   var currentCircle = {
-    radius : WALLRADIUS,
-    position : Vec2(0,0)
+    radius: WALLRADIUS,
+    position: Vec2(0, 0)
   };
   var newCircle = currentCircle;
-  var bwf; //borderwall fixture
   world = pl.World();
-  world.on('pre-solve', function(contact) {
-
-    if (true){
-      dummy(contact);
-
-      return;
-    }
-    var fixtureA = contact.getFixtureA();
-    var fixtureB = contact.getFixtureB();
-
-    var bodyA = contact.getFixtureA().getBody();
-    var bodyB = contact.getFixtureB().getBody();
-
-    var youCrashed = bodyA == yourBody || bodyB == yourBody;
-    if (youCrashed) {
-      setTimeout(function () {
-        crash(yourBody, bodyA == yourBody ? bodyB : bodyA);
-      }, 1);
-    }
-  });
-
-  function dummy(contact) {
-    var fixtureA = contact.getFixtureA();
-    var fixtureB = contact.getFixtureB();
-
-    var bodyA = contact.getFixtureA().getBody();
-    var bodyB = contact.getFixtureB().getBody();
-
-    var youCrashed = bodyA == borderWall || bodyB == borderWall;
-
-
-    /*
-    if (youCrashed) {
-      setTimeout(function () {
-        crash(borderWall, bodyA == borderWall ? bodyB : bodyA);
-      }, 1);
-    }
-    */
-  }
 
   function start() {
     state.startGame();
-    setupYou();
+    yourBody = createPlayer();
     setupBots();
     makeWalls(currentCircle);
   }
@@ -88,25 +47,27 @@ function Physics(ui) {
     ui.endGame();
   }
 
-  function setupYou() {
-    yourBody = world.createBody({
-      type : 'dynamic',
-      angularDamping : 2.0,
-      linearDamping : 0.5,
-      position : Vec2(),
-      bullet : true
+  function createPlayer(x = 0, y = 0) {
+    var player = world.createBody({
+      type: 'dynamic',
+      angularDamping: 2.0,
+      linearDamping: 0.5,
+      position: Vec2(x, y),
+      bullet: true,
+      health: 100,
+      infection: 1
     });
 
-    yourBody.createFixture(pl.Circle(SIZE), {
-      density : 1000,
-      filterCategoryBits : YOU,
-      filterMaskBits : OTHER | WALLS
+    player.createFixture(pl.Circle(SIZE), {
+      density: 1000,
+      filterCategoryBits: PLAYER,
+      filterMaskBits: PLAYER | WALLS
     });
+
+    return player;
   }
 
-
-
-  function updateYou (){
+  function updateYou() {
     if (yourBody) {
       if (ui.activeKeys.left && !ui.activeKeys.right) {
         var f = Vec2(10.0, 0.0);
@@ -130,7 +91,7 @@ function Physics(ui) {
     }
   }
 
-  function moveOtherBody(){
+  function moveOtherBody() {
     for (var i = 0; i !== otherBodies.length; i++) {
       otherBody = otherBodies[i]
       var f = otherBody.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
@@ -144,7 +105,7 @@ function Physics(ui) {
       return;
     }
     globalTime += dt;
-    updateYou ();
+    updateYou();
     moveOtherBody();
     shouldIshrink();
     //console.log (new Date());
@@ -153,55 +114,53 @@ function Physics(ui) {
 
   }
 
-  function shouldIshrink()
-  {
+  function shouldIshrink() {
 
-    if (globalTime - lastShrinkTime <100) {
+    if (globalTime - lastShrinkTime < 100) {
       return;
     }
     lastShrinkTime = globalTime;
 
-    if (!shrinkSteps){
+    if (!shrinkSteps) {
       newCircle = createNewCircle(currentCircle);
       shrinkSteps = NUMSTEPS;
-    }else{
+    } else {
 
-      currentCircle = shrinkCircle (currentCircle, newCircle);
+      currentCircle = shrinkCircle(currentCircle, newCircle);
       makeWalls(currentCircle);
       shrinkSteps--;
     }
   }
 
-  function shrinkCircle (cc, nc){
-    var nr = cc.radius- (cc.radius - nc.radius)/shrinkSteps;
-    var x = cc.position.x + (nc.position.x - cc.position.x)/shrinkSteps;
-    var y = cc.position.y + (nc.position.y - cc.position.y)/shrinkSteps;
+  function shrinkCircle(cc, nc) {
+    var nr = cc.radius - (cc.radius - nc.radius) / shrinkSteps;
+    var x = cc.position.x + (nc.position.x - cc.position.x) / shrinkSteps;
+    var y = cc.position.y + (nc.position.y - cc.position.y) / shrinkSteps;
     return {
-      position : Vec2(x, y),
-      radius : nr
+      position: Vec2(x, y),
+      radius: nr
     };
   }
 
-  function createNewCircle (p){
-    var r = p.radius*0.80;
-    var pr = p.radius- r;
-    var angle = rand (Math.PI *2);
-    var maxX = Math.sin (angle) * pr;
-    var maxY = Math.cos (angle) * pr;
+  function createNewCircle(p) {
+    var r = p.radius * 0.80;
+    var pr = p.radius - r;
+    var angle = rand(Math.PI * 2);
+    var maxX = Math.sin(angle) * pr;
+    var maxY = Math.cos(angle) * pr;
     var x = normalDistRandom() * maxX + p.position.x;
     var y = normalDistRandom() * maxY + p.position.y;
-    debugger;
     return {
-      position: Vec2(x,y),
+      position: Vec2(x, y),
       radius: r
     };
   }
 
   function normalDistRandom() {
     let u = 0, v = 0;
-    while(u === 0) u = Math.random(); //Converting [0,1) to (0,1)
-    while(v === 0) v = Math.random();
-    let num = Math.sqrt( -2.0 * Math.log( u ) ) * Math.cos( 2.0 * Math.PI * v );
+    while (u === 0) u = Math.random(); //Converting [0,1) to (0,1)
+    while (v === 0) v = Math.random();
+    let num = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
     num = num / 10.0 + 0.5; // Translate to 0 -> 1
     if (num > 1 || num < 0) return randn_bm(); // resample between 0 and 1
     return num;
@@ -210,42 +169,22 @@ function Physics(ui) {
   function setupBots() {
     otherBodies = [];
 
-    for (var i = 0; i < 0; i++) {
+    for (var i = 0; i < 5; i++) {
       var yourPosition = yourBody.getPosition();
       var x = yourPosition.x;
       var y = yourPosition.y;
 
       while (Math.abs(x - yourPosition.x) < SIZE * 2
-      && Math.abs(y - yourPosition.y) < SIZE * 2) {
-        var angle = rand (Math.PI * 2);
-        x = rand (WALLRADIUS-SIZE) * Math.sin(angle);
-        y = rand (WALLRADIUS-SIZE) * Math.cos(angle);
+        && Math.abs(y - yourPosition.y) < SIZE * 2) {
+        var angle = rand(Math.PI * 2);
+        x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
+        y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-
-      var vx = rand(1);
-      var vy = rand(1);
-      var va = rand(1);
-      makeOtherBody(x, y, vx, vy, va);
+      otherBodies.push(createPlayer(x, y));
     }
   }
 
-  function makeOtherBody(x, y, vx, vy, va) {
-    var otherBody = world.createBody({
-      position : Vec2(x, y),
-      type : 'dynamic',
-      linearDamping : 1.0,
-      bullet : true
-    });
-    otherBodies.push(otherBody);
-    otherBody.createFixture(pl.Circle(SIZE), {
-      density : 1000,
-      filterCategoryBits : OTHER,
-      filterMaskBits : YOU | WALLS | OTHER
-    });
-    return otherBody;
-  }
-
-  function makeWalls (cc) {
+  function makeWalls(cc) {
     var circlePoints = makeCirclePoints(cc.radius, cc.position.x, cc.position.y);
 
     if (!borderWall) {
@@ -253,8 +192,8 @@ function Physics(ui) {
     }
     borderWall.createFixture(pl.Chain(circlePoints), {
       density: 0,
-      filterCategoryBits : WALLS,
-      filterMaskBits : YOU | OTHER
+      filterCategoryBits: WALLS,
+      filterMaskBits: PLAYER
     });
     var fixA = borderWall.getFixtureList();
     var limit = 5;
@@ -267,17 +206,17 @@ function Physics(ui) {
     return borderWall;
   }
 
-  function makeCirclePoints (radius, p_x, p_y, numpoints=100){
+  function makeCirclePoints(radius, p_x, p_y, numpoints = 100) {
     if (numpoints < 3) return;
     var output = [];
 
-    var angle = Math.PI*2/numpoints;
+    var angle = Math.PI * 2 / numpoints;
 
-    for (i = 0; i < numpoints; ++i){
-      var currAngle = angle*i;
-      var y = Math.sin (currAngle) * radius + p_x;
-      var x = Math.cos (currAngle) * radius + p_y;
-      output.push(Vec2 (x,y));
+    for (i = 0; i < numpoints; ++i) {
+      var currAngle = angle * i;
+      var y = Math.sin(currAngle) * radius + p_x;
+      var x = Math.cos(currAngle) * radius + p_y;
+      output.push(Vec2(x, y));
     }
     output.push(output[0]);
     return output;
@@ -299,7 +238,7 @@ function Physics(ui) {
   }
 
   //If player hits out of bounds, game over for that player
-  function outofbounds (body) {
+  function outofbounds(body) {
     var p = body.getPosition();
 
   }
@@ -313,16 +252,16 @@ function Physics(ui) {
   this.ratio = 64;
 }
 
-Stage(function(stage) {
+Stage(function (stage) {
   var activeKeys = {};
 
 
   var KEY_NAMES = {
-    32 : 'start',
-    37 : 'right',
-    38 : 'up',
-    39 : 'left',
-    40 : 'down'
+    32: 'start',
+    37: 'right',
+    38: 'up',
+    39: 'left',
+    40: 'down'
   };
 
   var physics = new Physics({
@@ -332,25 +271,25 @@ Stage(function(stage) {
   });
   var world, meta;
   stage.background('#222222');
-  stage.on('viewport', function(size) {
+  stage.on('viewport', function (size) {
     meta.pin({
-      scaleMode : 'in-pad',
-      scaleWidth : size.width,
-      scaleHeight : size.height
+      scaleMode: 'in-pad',
+      scaleWidth: size.width,
+      scaleHeight: size.height
     });
     world.pin({
-      scaleMode : 'in-pad',
-      scaleWidth : size.width,
-      scaleHeight : size.height
+      scaleMode: 'in-pad',
+      scaleWidth: size.width,
+      scaleHeight: size.height
     });
   });
   //
   world = new Stage
     .planck(physics.world, { ratio: 80 })
     .pin({
-      handle : -0.5,
-      width : physics.spaceWidth,
-      height : physics.spaceHeight
+      handle: -0.5,
+      width: physics.spaceWidth,
+      height: physics.spaceHeight
     })
     .appendTo(stage)
     .hide();
@@ -364,20 +303,20 @@ Stage(function(stage) {
 
   meta = Stage
     .create()
-    .pin({ width : 1000, height : 1000 })
+    .pin({ width: 1000, height: 1000 })
     .appendTo(stage);
 
   startScreen = Stage
     .string('text')
     .value('Start!')
-    .pin({ offsetX: 500, offsetY: 500, scale : 1 })
+    .pin({ offsetX: 500, offsetY: 500, scale: 1 })
     .appendTo(meta)
     .show();
 
   endScreen = Stage
     .string('text')
     .value('End!')
-    .pin({offsetX: 1, offsetY: 4, scale : 1 })
+    .pin({ offsetX: 1, offsetY: 4, scale: 1 })
     .appendTo(meta)
     .hide();
 
@@ -393,14 +332,22 @@ Stage(function(stage) {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
+    hideBodies();
     endScreen.show();
   }
 
-  document.onkeydown = function(evt) {
+  function hideBodies()
+  {
+    for (i = 0; i < otherBodies.length; i++) {
+      otherBodies[i].hide();
+    }
+  }
+
+  document.onkeydown = function (evt) {
     activeKeys[KEY_NAMES[evt.keyCode]] = true;
   };
 
-  document.onkeyup = function(evt) {
+  document.onkeyup = function (evt) {
     var old_start = activeKeys['start']
     activeKeys[KEY_NAMES[evt.keyCode]] = false;
     if (old_start && !activeKeys['start'] && m_state != GAME_STATE) {
@@ -410,11 +357,11 @@ Stage(function(stage) {
 });
 
 Stage({
-  textures : {
+  textures: {
 
-    text : function(d) {
+    text: function (d) {
       d += '';
-      return Stage.canvas(function(ctx) {
+      return Stage.canvas(function (ctx) {
         var ratio = 2;
         this.size(16, 24, ratio);
         ctx.scale(ratio, ratio);
