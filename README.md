@@ -12,11 +12,11 @@
 ## AOE cough cone (based on the infection level)
 - range and size of aoe cough are fixed (your infection level doesn't matter)
 - effectiveness is determined by your infection level
-- your coughs don't affect you (can't stand in your own cough)
-- disappears immediately (does not linger)
+- disappears immediately (can't stand in your own cough)
+- implement mechanic to prevent spam coughing
 
 ## % Health decrase based on level of infection -win by last man standing
-- globally visible healthbar
+- globally visible healthbar: player color indicates current health
 
 ## Get med kits to become more healthy (infect health packages, player dropped health packs)
 - 3 use health kit: 1st use is covid free, 2nd use is some covid, 3rd use is lots covid

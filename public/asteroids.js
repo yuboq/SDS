@@ -5,6 +5,8 @@ function Physics(ui) {
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
   var NUMSTEPS = 100;
+  var INITIAL_HEALTH = 100;
+  var INITIAL_INFECT = 1;
 
   var SIZE = 0.30;
   var WALLRADIUS = 5;
@@ -13,7 +15,7 @@ function Physics(ui) {
     startGame: function () {
       this.gameover = false;
     },
-    crash: function () {
+    die: function () {
       this.endGame();
     },
     endGame: function () {
@@ -22,11 +24,13 @@ function Physics(ui) {
   };
 
   var world;
+
+  var yourPlayer;
   var otherBodies = [];
-  var yourBody;
   var borderWall;
   var globalTime = 0;
   var lastShrinkTime = globalTime;
+  var updateHealthTime = globalTime;
   var shrinkSteps = NUMSTEPS;
   var currentCircle = {
     radius: WALLRADIUS,
@@ -37,7 +41,7 @@ function Physics(ui) {
 
   function start() {
     state.startGame();
-    yourBody = createPlayer();
+    yourPlayer = new Player(0, 0);
     setupBots();
     makeWalls(currentCircle);
   }
@@ -47,15 +51,13 @@ function Physics(ui) {
     ui.endGame();
   }
 
-  function createPlayer(x = 0, y = 0) {
+  function setupPlayer(x = 0, y = 0) {
     var player = world.createBody({
       type: 'dynamic',
       angularDamping: 2.0,
       linearDamping: 0.5,
       position: Vec2(x, y),
-      bullet: true,
-      health: 100,
-      infection: 1
+      bullet: true
     });
 
     player.createFixture(pl.Circle(SIZE), {
@@ -67,26 +69,53 @@ function Physics(ui) {
     return player;
   }
 
+  function Player(x, y) {
+    this.playerBody = setupPlayer(x, y);
+    this.health = INITIAL_HEALTH;
+    this.infection = INITIAL_INFECT;
+
+    this.getWorldCenter = function() {
+      return this.playerBody.getWorldCenter();
+    }
+    this.getHealth = function () {
+      return this.health;
+    };
+
+    this.addHealth = function (amount = ((-1)*this.infection )) {
+      this.health += amount;
+      //this.checkHealth();
+    };
+    this.checkHealth = function () {
+      if (this.health > 100) {
+        this.health = 100;
+      }
+      else if (this.health < 0) {
+        this.health = 0;
+      }
+    };
+
+  }
+
   function updateYou() {
-    if (yourBody) {
+    if (yourPlayer.playerBody) {
       if (ui.activeKeys.left && !ui.activeKeys.right) {
         var f = Vec2(10.0, 0.0);
-        var p = yourBody.getWorldCenter();
-        yourBody.applyLinearImpulse(f, p, true);
+        var p = yourPlayer.getWorldCenter();
+        yourPlayer.playerBody.applyLinearImpulse(f, p, true);
       } else if (ui.activeKeys.right && !ui.activeKeys.left) {
         var f = Vec2(-10.0, 0.0);
-        var p = yourBody.getWorldCenter();
-        yourBody.applyLinearImpulse(f, p, true);
+        var p = yourPlayer.playerBody.getWorldCenter();
+        yourPlayer.playerBody.applyLinearImpulse(f, p, true);
       }
       if (ui.activeKeys.up && !ui.activeKeys.down) {
         var f = Vec2(0.0, -10.0);
-        var p = yourBody.getWorldCenter();
-        yourBody.applyLinearImpulse(f, p, true);
+        var p = yourPlayer.playerBody.getWorldCenter();
+        yourPlayer.playerBody.applyLinearImpulse(f, p, true);
       }
       if (ui.activeKeys.down && !ui.activeKeys.up) {
         var f = Vec2(0.0, 10.0);
-        var p = yourBody.getWorldCenter();
-        yourBody.applyLinearImpulse(f, p, true);
+        var p = yourPlayer.playerBody.getWorldCenter();
+        yourPlayer.playerBody.applyLinearImpulse(f, p, true);
       }
     }
   }
@@ -108,10 +137,24 @@ function Physics(ui) {
     updateYou();
     moveOtherBody();
     shouldIshrink();
+    updateHealth();
     //console.log (new Date());
     //console.log (globalTime);
-    //console.log(yourBody.getWorldCenter());
+    //console.log(yourPlayer.playerBody.getWorldCenter());
 
+  }
+
+  function updateHealth() {
+    console.log (yourPlayer.getHealth());
+    if (Math.abs (globalTime - updateHealthTime) < 100) {
+      return;
+    }
+
+    updateHealthTime = globalTime;
+    yourPlayer.addHealth();
+    if (yourPlayer.getHealth() <= 0) {
+      die();//gameover
+    }
   }
 
   function shouldIshrink() {
@@ -170,7 +213,7 @@ function Physics(ui) {
     otherBodies = [];
 
     for (var i = 0; i < 5; i++) {
-      var yourPosition = yourBody.getPosition();
+      var yourPosition = yourPlayer.playerBody.getPosition();
       var x = yourPosition.x;
       var y = yourPosition.y;
 
@@ -180,7 +223,7 @@ function Physics(ui) {
         x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
         y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-      otherBodies.push(createPlayer(x, y));
+      otherBodies.push(setupPlayer(x, y));
     }
   }
 
@@ -222,14 +265,17 @@ function Physics(ui) {
     return output;
   }
 
-  function crash(you, other) {
-    if (!yourBody) return;
+  function die(you, other) {
+    if (!yourPlayer.playerBody) return;
 
-    state.crash();
+    state.die();
 
-    // Remove the ship body for a while
-    world.destroyBody(yourBody);
-    yourBody = null;
+    world.destroyBody(yourPlayer.playerBody);
+    for (i = 0; i < otherBodies.length; i++) {
+      world.destroyBody(otherBodies[i]);
+    }
+    yourPlayer.playerBody = null;
+    otherBodies = null;
     end();
   }
 
@@ -332,15 +378,7 @@ Stage(function (stage) {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
-    hideBodies();
     endScreen.show();
-  }
-
-  function hideBodies()
-  {
-    for (i = 0; i < otherBodies.length; i++) {
-      otherBodies[i].hide();
-    }
   }
 
   document.onkeydown = function (evt) {
