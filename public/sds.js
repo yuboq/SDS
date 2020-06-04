@@ -1,3 +1,4 @@
+(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const Player = require ('./player.js');
 function Physics(ui) {
   var pl = planck, Vec2 = pl.Vec2;
@@ -52,9 +53,7 @@ function Physics(ui) {
   }
 
   function createPlayer (x = 0, y = 0) {
-    var playerPos = setupPlayerBody (x,y);
-    var player = new Player(playerPos);
-    return player;
+    return new Player(setupPlayerBody (x,y));
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -391,3 +390,66 @@ Stage({
 
   }
 });
+
+},{"./player.js":2}],2:[function(require,module,exports){
+const {
+  INITIAL_HEALTH,
+  INITIAL_SICK_RATE,
+  MIN_HEALTH,
+  MAX_HEALTH
+} = require('./sdsconsts.js');
+
+class Player {
+
+  constructor(playerBody) {
+    this._playerBody = playerBody;
+    this._health = INITIAL_HEALTH;
+    this._sickRate = INITIAL_SICK_RATE;
+  }
+
+  getWorldCenter() {
+    return this.playerBody.getWorldCenter();
+  }
+
+  get health() {
+    return this._health;
+  }
+
+  addHealth(amount = ((-1) * this._sickRate)) {
+    this._health += amount;
+  }
+
+  checkHealth() {
+    if (this._health > MAX_HEALTH) {
+      this._health = MAX_HEALTH;
+    }
+    else if (this._health < MIN_HEALTH) {
+      this._health = MIN_HEALTH
+    }
+  }
+  getPosition() {
+    return this._playerBody.getPosition();
+  }
+  get playerBody() {
+    return this._playerBody;
+  }
+  getWorldCenter() {
+    return this._playerBody.getWorldCenter();
+  }
+  getWorldVector(vec2) {
+    return this._playerBody.getWorldVector(vec2);
+  }
+  applyLinearImpulse(f, p, b) {
+    return this._playerBody.applyLinearImpulse(f, p, b);
+  }
+}
+
+module.exports = Player;
+},{"./sdsconsts.js":3}],3:[function(require,module,exports){
+module.exports = { 
+    INITIAL_HEALTH : 100,
+    INITIAL_SICK_RATE : 1,
+    MAX_HEALTH : 100,
+    MIN_HEALTH : 0
+};
+},{}]},{},[1]);
