@@ -1,21 +1,20 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const Player = require ('./player.js');
 const {
+  PLAYER,
+  WALLS,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  NUMSTEPS,
+  BOT_NUM,
+  SIZE,
+  WALLRADIUS,
   pl,
   Vec2,
   rand
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
-  const PLAYER = 2;
-  const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
-
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -43,40 +42,25 @@ function Physics(ui) {
     position: Vec2(0, 0)
   };
   var newCircle = currentCircle;
+  var stage = null
   world = pl.World();
 
-  function start() {
+  function start(st) {
     state.startGame();
-    yourPlayer = createPlayer(0, 0, true);
+    stage = st;
+    yourPlayer = createPlayer(stage, 0, 0, true);
     setupBots();
     makeWalls(currentCircle);
   }
 
   function end() {
     state.endGame();
+    stage = null;
     ui.endGame();
   }
 
-  function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
-  }
-
-  function setupPlayerBody(x = 0, y = 0) {
-    var player = world.createBody({
-      type: 'dynamic',
-      angularDamping: 2.0,
-      linearDamping: 0.5,
-      position: Vec2(x, y),
-      bullet: true
-    });
-
-    player.createFixture(pl.Circle(SIZE), {
-      density: 1000,
-      filterCategoryBits: PLAYER,
-      filterMaskBits: PLAYER | WALLS
-    });
-
-    return player;
+  function createPlayer (stage, x = 0, y = 0, isHuman) {
+    return new Player(world, stage, x, y, isHuman, ui.activeKeys);
   }
 
   function moveOtherBody() {
@@ -99,7 +83,6 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -177,7 +160,7 @@ function Physics(ui) {
         x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
         y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-      otherBodies.push(createPlayer (x,y, false));
+      otherBodies.push(createPlayer(stage, x,y, false));
     }
   }
 
@@ -302,6 +285,8 @@ Stage(function (stage) {
     .appendTo(meta)
     .show();
 
+  var playerico = Stage.image('player').pin({ offsetX: 0, offsetY: 0, scale: 1 }).appendTo(stage).show();
+
   endScreen = Stage
     .string('text')
     .value('End!')
@@ -313,7 +298,7 @@ Stage(function (stage) {
     startScreen.hide();
     m_state = GAME_STATE;
     world.show();
-    physics.start();
+    physics.start(world);
     endScreen.hide();
   }
 
@@ -338,7 +323,17 @@ Stage(function (stage) {
 });
 
 Stage({
+  image : {
+    src : './images/players.png',
+    ratio : 2
+  },
   textures: {
+    player: {
+      x : 0,
+      y : 0,
+      width : 16,
+      height : 24
+    },
     text: function (d) {
       d += '';
       return Stage.canvas(function (ctx) {
@@ -361,18 +356,67 @@ const {
   INITIAL_SICK_RATE,
   MIN_HEALTH,
   MAX_HEALTH,
+  SIZE,
+  PLAYER,
+  WALLS,
   pl,
   Vec2,
   rand
 } = require('./sdsconsts.js');
 
 class Player {
-  constructor(playerBody, isHuman = false, activeKeys = []) {
+  constructor(world, ui, x, y, isHuman = false, activeKeys = []) {
+    this._world = world;
+    this._ui = ui;
     this._isHuman = isHuman;
-    this._playerBody = playerBody;
+    this._playerBody = isHuman ? this.createPlayerBody(x, y) : this.createBotBody(x, y);
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
+    this.x = x;
+    this.y = y;
+    this.vMin = 0;
+    this.vMax = 100;
+    this.aMax = 10;
+    this.vx = 0;
+    this.vy = 0;
+    this.v = 0;
+    this.dir = 0;
+    this.rotation = 0;
+    this.accMain = 0;
+    this.accSide = 0;
+    this.accX = 0;
+    this.accY = 0;
+    this.accCX = null;
+    this.accCY = null;
+  }
+
+  createBotBody(x, y) {
+    this.createBotUI();
+    return this.createBody(x, y)
+  }
+
+  createPlayerBody(x, y) {
+    this.createPlayerUI();
+    return this.createBody(x, y)
+  }
+
+  createBody(x, y) {
+    var player = this._world.createBody({
+      type: 'dynamic',
+      angularDamping: 2.0,
+      linearDamping: 0.5,
+      position: Vec2(x, y),
+      bullet: true
+    });
+
+    player.createFixture(pl.Circle(SIZE), {
+      density: 1000,
+      filterCategoryBits: PLAYER,
+      filterMaskBits: PLAYER | WALLS
+    });
+
+    return player;
   }
 
   getWorldCenter() {
@@ -381,6 +425,21 @@ class Player {
 
   get health() {
     return this._health;
+  }
+
+  createPlayerUI() {
+    this.playerUI = Stage.create().pin('handle', 0.5);
+    this.playerUI.player = Stage.image('player').pin('handle', 0.5).appendTo(this._ui);
+    this.playerUI.appendTo(this._ui);
+    this.uiUpdate();
+  }
+
+  createBotUI() {
+
+  }
+
+  uiUpdate() {
+    this.playerUI.offset(this);
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
@@ -414,6 +473,9 @@ class Player {
   tick(dt) {
     if (this._isHuman) {
       this.updateHuman(dt);
+      this.x = this._playerBody.x;
+      this.y = this._playerBody.y;
+      this.uiUpdate();
     } else {
       this.updateBot(dt);
     }
@@ -454,15 +516,24 @@ module.exports = Player;
 
 },{"./sdsconsts.js":3}],3:[function(require,module,exports){
 module.exports = {
-    INITIAL_HEALTH : 100,
-    INITIAL_SICK_RATE : 1,
-    MAX_HEALTH : 100,
-    MIN_HEALTH : 0,
-    pl : planck,
-    Vec2 : planck.Vec2,
-    rand : function(value) {
+    INITIAL_HEALTH: 100,
+    INITIAL_SICK_RATE: 1,
+    MAX_HEALTH: 100,
+    MIN_HEALTH: 0,
+    PLAYER: 2,
+    WALLS: 4,
+    SPACE_WIDTH: 16,
+    SPACE_HEIGHT: 9,
+    NUMSTEPS: 100,
+    BOT_NUM: 5,
+
+    SIZE: 0.30,
+    WALLRADIUS: 5,
+    pl: planck,
+    Vec2: planck.Vec2,
+    rand: function(value) {
       return (Math.random() - 0.5) * (value || 1);
     }
-};
+}
 
 },{}]},{},[1]);

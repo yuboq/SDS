@@ -1,20 +1,19 @@
 const Player = require ('./player.js');
 const {
+  PLAYER,
+  WALLS,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  NUMSTEPS,
+  BOT_NUM,
+  SIZE,
+  WALLRADIUS,
   pl,
   Vec2,
   rand
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
-  const PLAYER = 2;
-  const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
-
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -42,40 +41,25 @@ function Physics(ui) {
     position: Vec2(0, 0)
   };
   var newCircle = currentCircle;
+  var stage = null
   world = pl.World();
 
-  function start() {
+  function start(st) {
     state.startGame();
-    yourPlayer = createPlayer(0, 0, true);
+    stage = st;
+    yourPlayer = createPlayer(stage, 0, 0, true);
     setupBots();
     makeWalls(currentCircle);
   }
 
   function end() {
     state.endGame();
+    stage = null;
     ui.endGame();
   }
 
-  function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
-  }
-
-  function setupPlayerBody(x = 0, y = 0) {
-    var player = world.createBody({
-      type: 'dynamic',
-      angularDamping: 2.0,
-      linearDamping: 0.5,
-      position: Vec2(x, y),
-      bullet: true
-    });
-
-    player.createFixture(pl.Circle(SIZE), {
-      density: 1000,
-      filterCategoryBits: PLAYER,
-      filterMaskBits: PLAYER | WALLS
-    });
-
-    return player;
+  function createPlayer (stage, x = 0, y = 0, isHuman) {
+    return new Player(world, stage, x, y, isHuman, ui.activeKeys);
   }
 
   function moveOtherBody() {
@@ -98,7 +82,6 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -176,7 +159,7 @@ function Physics(ui) {
         x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
         y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-      otherBodies.push(createPlayer (x,y, false));
+      otherBodies.push(createPlayer(stage, x,y, false));
     }
   }
 
@@ -301,6 +284,8 @@ Stage(function (stage) {
     .appendTo(meta)
     .show();
 
+  var playerico = Stage.image('player').pin({ offsetX: 0, offsetY: 0, scale: 1 }).appendTo(stage).show();
+
   endScreen = Stage
     .string('text')
     .value('End!')
@@ -312,7 +297,7 @@ Stage(function (stage) {
     startScreen.hide();
     m_state = GAME_STATE;
     world.show();
-    physics.start();
+    physics.start(world);
     endScreen.hide();
   }
 
@@ -337,7 +322,17 @@ Stage(function (stage) {
 });
 
 Stage({
+  image : {
+    src : './images/players.png',
+    ratio : 2
+  },
   textures: {
+    player: {
+      x : 0,
+      y : 0,
+      width : 16,
+      height : 24
+    },
     text: function (d) {
       d += '';
       return Stage.canvas(function (ctx) {
