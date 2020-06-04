@@ -1,7 +1,11 @@
-# Bugs/fixes/TODO
-- reset enemy on gameover
-- refactor the code
-
+# Bugs/TODO
+- Circle reset on game over
+- Add color to represent your dude
+- Add sprites for healthkits
+- Bot disappears on death
+- Remove collision from circle: player takes extra damage if outside circle
+- AOE cough cone
+- Create character assets + attach them to players
 
 # Ideas/game mechanics/Features
 
