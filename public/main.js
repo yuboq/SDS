@@ -1,12 +1,17 @@
 const Player = require ('./player.js');
+const {
+  pl,
+  Vec2,
+  rand
+} = require('./sdsconsts.js');
+
 function Physics(ui) {
-  var pl = planck, Vec2 = pl.Vec2;
   const PLAYER = 2;
   const WALLS = 4;
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
   const NUMSTEPS = 100;
-
+  const BOT_NUM = 5;
 
   var SIZE = 0.30;
   var WALLRADIUS = 5;
@@ -41,7 +46,7 @@ function Physics(ui) {
 
   function start() {
     state.startGame();
-    yourPlayer = createPlayer();
+    yourPlayer = createPlayer(0, 0, true);
     setupBots();
     makeWalls(currentCircle);
   }
@@ -51,8 +56,8 @@ function Physics(ui) {
     ui.endGame();
   }
 
-  function createPlayer (x = 0, y = 0) {
-    return new Player(setupPlayerBody (x,y));
+  function createPlayer (x = 0, y = 0, isHuman) {
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -73,37 +78,8 @@ function Physics(ui) {
     return player;
   }
 
-  function updateYou() {
-    if (yourPlayer.playerBody) {
-      if (ui.activeKeys.left && !ui.activeKeys.right) {
-        var f = Vec2(10.0, 0.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      } else if (ui.activeKeys.right && !ui.activeKeys.left) {
-        var f = Vec2(-10.0, 0.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-      if (ui.activeKeys.up && !ui.activeKeys.down) {
-        var f = Vec2(0.0, -10.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-      if (ui.activeKeys.down && !ui.activeKeys.up) {
-        var f = Vec2(0.0, 10.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-    }
-  }
-
   function moveOtherBody() {
-    for (var i = 0; i !== otherBodies.length; i++) {
-      otherBody = otherBodies[i]
-      var f = otherBody.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
-      var p = otherBody.getWorldCenter();
-      otherBody.applyLinearImpulse(f, p, true);
-    }
+    otherBodies.forEach(body => body.tick());
   }
 
   function tick(dt) {
@@ -111,7 +87,7 @@ function Physics(ui) {
       return;
     }
     globalTime += dt;
-    updateYou();
+    yourPlayer.tick();
     moveOtherBody();
     shouldIshrink();
     updateHealth();
@@ -189,7 +165,7 @@ function Physics(ui) {
   function setupBots() {
     otherBodies = [];
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < BOT_NUM; i++) {
       var yourPosition = yourPlayer.getPosition();
       var x = yourPosition.x;
       var y = yourPosition.y;
@@ -200,7 +176,7 @@ function Physics(ui) {
         x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
         y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-      otherBodies.push(createPlayer (x,y));
+      otherBodies.push(createPlayer (x,y, false));
     }
   }
 
@@ -256,16 +232,6 @@ function Physics(ui) {
     end();
   }
 
-  function rand(value) {
-    return (Math.random() - 0.5) * (value || 1);
-  }
-
-  //If player hits out of bounds, game over for that player
-  function outofbounds(body) {
-    var p = body.getPosition();
-
-  }
-
   this.start = start;
   this.world = world;
   this.state = state;
@@ -277,7 +243,6 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-
 
   var KEY_NAMES = {
     32: 'start',
@@ -373,7 +338,6 @@ Stage(function (stage) {
 
 Stage({
   textures: {
-
     text: function (d) {
       d += '';
       return Stage.canvas(function (ctx) {

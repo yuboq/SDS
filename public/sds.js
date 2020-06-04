@@ -1,13 +1,18 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 const Player = require ('./player.js');
+const {
+  pl,
+  Vec2,
+  rand
+} = require('./sdsconsts.js');
+
 function Physics(ui) {
-  var pl = planck, Vec2 = pl.Vec2;
   const PLAYER = 2;
   const WALLS = 4;
   var SPACE_WIDTH = 16;
   var SPACE_HEIGHT = 9;
   const NUMSTEPS = 100;
-
+  const BOT_NUM = 5;
 
   var SIZE = 0.30;
   var WALLRADIUS = 5;
@@ -42,7 +47,7 @@ function Physics(ui) {
 
   function start() {
     state.startGame();
-    yourPlayer = createPlayer();
+    yourPlayer = createPlayer(0, 0, true);
     setupBots();
     makeWalls(currentCircle);
   }
@@ -52,8 +57,8 @@ function Physics(ui) {
     ui.endGame();
   }
 
-  function createPlayer (x = 0, y = 0) {
-    return new Player(setupPlayerBody (x,y));
+  function createPlayer (x = 0, y = 0, isHuman) {
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -74,37 +79,8 @@ function Physics(ui) {
     return player;
   }
 
-  function updateYou() {
-    if (yourPlayer.playerBody) {
-      if (ui.activeKeys.left && !ui.activeKeys.right) {
-        var f = Vec2(10.0, 0.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      } else if (ui.activeKeys.right && !ui.activeKeys.left) {
-        var f = Vec2(-10.0, 0.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-      if (ui.activeKeys.up && !ui.activeKeys.down) {
-        var f = Vec2(0.0, -10.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-      if (ui.activeKeys.down && !ui.activeKeys.up) {
-        var f = Vec2(0.0, 10.0);
-        var p = yourPlayer.getWorldCenter();
-        yourPlayer.applyLinearImpulse(f, p, true);
-      }
-    }
-  }
-
   function moveOtherBody() {
-    for (var i = 0; i !== otherBodies.length; i++) {
-      otherBody = otherBodies[i]
-      var f = otherBody.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
-      var p = otherBody.getWorldCenter();
-      otherBody.applyLinearImpulse(f, p, true);
-    }
+    otherBodies.forEach(body => body.tick());
   }
 
   function tick(dt) {
@@ -112,7 +88,7 @@ function Physics(ui) {
       return;
     }
     globalTime += dt;
-    updateYou();
+    yourPlayer.tick();
     moveOtherBody();
     shouldIshrink();
     updateHealth();
@@ -190,7 +166,7 @@ function Physics(ui) {
   function setupBots() {
     otherBodies = [];
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < BOT_NUM; i++) {
       var yourPosition = yourPlayer.getPosition();
       var x = yourPosition.x;
       var y = yourPosition.y;
@@ -201,7 +177,7 @@ function Physics(ui) {
         x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
         y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
       }
-      otherBodies.push(createPlayer (x,y));
+      otherBodies.push(createPlayer (x,y, false));
     }
   }
 
@@ -257,16 +233,6 @@ function Physics(ui) {
     end();
   }
 
-  function rand(value) {
-    return (Math.random() - 0.5) * (value || 1);
-  }
-
-  //If player hits out of bounds, game over for that player
-  function outofbounds(body) {
-    var p = body.getPosition();
-
-  }
-
   this.start = start;
   this.world = world;
   this.state = state;
@@ -278,7 +244,6 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-
 
   var KEY_NAMES = {
     32: 'start',
@@ -374,7 +339,6 @@ Stage(function (stage) {
 
 Stage({
   textures: {
-
     text: function (d) {
       d += '';
       return Stage.canvas(function (ctx) {
@@ -391,20 +355,24 @@ Stage({
   }
 });
 
-},{"./player.js":2}],2:[function(require,module,exports){
+},{"./player.js":2,"./sdsconsts.js":3}],2:[function(require,module,exports){
 const {
   INITIAL_HEALTH,
   INITIAL_SICK_RATE,
   MIN_HEALTH,
-  MAX_HEALTH
+  MAX_HEALTH,
+  pl,
+  Vec2,
+  rand
 } = require('./sdsconsts.js');
 
 class Player {
-
-  constructor(playerBody) {
+  constructor(playerBody, isHuman = false, activeKeys = []) {
+    this._isHuman = isHuman;
     this._playerBody = playerBody;
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
+    this._activeKeys = activeKeys;
   }
 
   getWorldCenter() {
@@ -442,14 +410,59 @@ class Player {
   applyLinearImpulse(f, p, b) {
     return this._playerBody.applyLinearImpulse(f, p, b);
   }
+
+  tick(dt) {
+    if (this._isHuman) {
+      this.updateHuman(dt);
+    } else {
+      this.updateBot(dt);
+    }
+  }
+
+  updateHuman(dt) {
+    if (this.playerBody) {
+      if (this._activeKeys.left && !this._activeKeys.right) {
+        var f = Vec2(10.0, 0.0);
+        var p = this.getWorldCenter();
+        this.applyLinearImpulse(f, p, true);
+      } else if (this._activeKeys.right && !this._activeKeys.left) {
+        var f = Vec2(-10.0, 0.0);
+        var p = this.getWorldCenter();
+        this.applyLinearImpulse(f, p, true);
+      }
+      if (this._activeKeys.up && !this._activeKeys.down) {
+        var f = Vec2(0.0, -10.0);
+        var p = this.getWorldCenter();
+        this.applyLinearImpulse(f, p, true);
+      }
+      if (this._activeKeys.down && !this._activeKeys.up) {
+        var f = Vec2(0.0, 10.0);
+        var p = this.getWorldCenter();
+        this.applyLinearImpulse(f, p, true);
+      }
+    }
+  }
+
+  updateBot(dt) {
+    var f = this.getWorldVector(Vec2(rand(50) * (rand(1) > 0.5 ? 1 : -1), rand(50) * (rand(1) > 0.5 ? 1 : -1)));
+    var p = this.getWorldCenter();
+    this.applyLinearImpulse(f, p, true);
+  }
 }
 
 module.exports = Player;
+
 },{"./sdsconsts.js":3}],3:[function(require,module,exports){
-module.exports = { 
+module.exports = {
     INITIAL_HEALTH : 100,
     INITIAL_SICK_RATE : 1,
     MAX_HEALTH : 100,
-    MIN_HEALTH : 0
+    MIN_HEALTH : 0,
+    pl : planck,
+    Vec2 : planck.Vec2,
+    rand : function(value) {
+      return (Math.random() - 0.5) * (value || 1);
+    }
 };
+
 },{}]},{},[1]);
