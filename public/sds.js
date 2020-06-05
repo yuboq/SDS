@@ -244,6 +244,12 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
+  Stage.image ('player')
+  .appendTo(stage)
+  .pin({
+    align: 0.5, //0 for top left, 1 for to right
+    scale : 0.25
+  }); 
 
   var KEY_NAMES = {
     32: 'start',
@@ -253,6 +259,7 @@ Stage(function (stage) {
     40: 'down'
   };
 
+  
   var physics = new Physics({
     startGame: startGame,
     endGame: endGame,
@@ -317,6 +324,10 @@ Stage(function (stage) {
     endScreen.hide();
   }
 
+  function addImage (){
+    
+  }
+
   function endGame() {
     startScreen.hide();
     m_state = END_STATE;
@@ -338,6 +349,13 @@ Stage(function (stage) {
 });
 
 Stage({
+  name : 'player',
+  image : './images/players.png'
+});
+
+
+Stage ({
+  
   textures: {
     text: function (d) {
       d += '';
