@@ -1,21 +1,23 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+var playerIcon;
+
 const Player = require ('./player.js');
 const {
   pl,
   Vec2,
-  rand
+  rand,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  BOT_NUM,
+  CIRCLE_RESOLUTION,
+  SIZE,
+  WALLRADIUS
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
   const PLAYER = 2;
   const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
 
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -37,7 +39,7 @@ function Physics(ui) {
   var globalTime = 0;
   var lastShrinkTime = globalTime;
   var updateHealthTime = globalTime;
-  var shrinkSteps = NUMSTEPS;
+  var shrinkSteps = CIRCLE_RESOLUTION;
   var currentCircle = {
     radius: WALLRADIUS,
     position: Vec2(0, 0)
@@ -58,7 +60,7 @@ function Physics(ui) {
   }
 
   function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys, playerIcon);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -99,7 +101,7 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
+    //console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -120,7 +122,7 @@ function Physics(ui) {
 
     if (!shrinkSteps) {
       newCircle = createNewCircle(currentCircle);
-      shrinkSteps = NUMSTEPS;
+      shrinkSteps = CIRCLE_RESOLUTION;
     } else {
 
       currentCircle = shrinkCircle(currentCircle, newCircle);
@@ -244,10 +246,10 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-  Stage.image ('player')
+  playerIcon = Stage.image ('player')
   .appendTo(stage)
   .pin({
-    align: 0.5, //0 for top left, 1 for to right
+    //align: 0.5, //0 for top left, 1 for to right
     scale : 0.25
   }); 
 
@@ -379,18 +381,22 @@ const {
   INITIAL_SICK_RATE,
   MIN_HEALTH,
   MAX_HEALTH,
-  pl,
   Vec2,
-  rand
+  rand,
+  SPACE_HEIGHT,
+  SPACE_WIDTH,
+  WALLRADIUS,
+  GOD_MODE
 } = require('./sdsconsts.js');
 
 class Player {
-  constructor(playerBody, isHuman = false, activeKeys = []) {
+  constructor(playerBody, isHuman = false, activeKeys = [], playerIcon) {
     this._isHuman = isHuman;
     this._playerBody = playerBody;
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
+    this._playerIcon = playerIcon;
   }
 
   getWorldCenter() {
@@ -402,6 +408,10 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
+    if (GOD_MODE) {
+      this._health = 100;
+      return;
+    }
     this._health += amount;
   }
 
@@ -452,12 +462,23 @@ class Player {
         var f = Vec2(0.0, -10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
-      }
-      if (this._activeKeys.down && !this._activeKeys.up) {
+      } else if (this._activeKeys.down && !this._activeKeys.up) {
         var f = Vec2(0.0, 10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
       }
+
+      this._playerIcon.pin ({
+        handle: 0.5,
+        alignX: this.getPosition().x,
+        alignY: this.getPosition().y,
+
+        //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+        //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+        rotation: this._playerBody.getAngle()
+      })
+
+      console.log (this._playerBody.getWorldPoint(Vec2 (0, 0.30)));
     }
   }
 
@@ -480,7 +501,16 @@ module.exports = {
     Vec2 : planck.Vec2,
     rand : function(value) {
       return (Math.random() - 0.5) * (value || 1);
-    }
+    },
+    SPACE_WIDTH: 16,
+    SPACE_HEIGHT: 9,
+    BOT_NUM: 5,
+    CIRCLE_RESOLUTION : 100,
+    SIZE : 0.30,
+    WALLRADIUS : 5,
+    WORLD_WIDTH: 1000,
+    WORLD_HEIGHT: 1000,
+    GOD_MODE: true
 };
 
 },{}]},{},[1]);

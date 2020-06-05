@@ -1,20 +1,22 @@
+var playerIcon;
+
 const Player = require ('./player.js');
 const {
   pl,
   Vec2,
-  rand
+  rand,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  BOT_NUM,
+  CIRCLE_RESOLUTION,
+  SIZE,
+  WALLRADIUS
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
   const PLAYER = 2;
   const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
 
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -36,7 +38,7 @@ function Physics(ui) {
   var globalTime = 0;
   var lastShrinkTime = globalTime;
   var updateHealthTime = globalTime;
-  var shrinkSteps = NUMSTEPS;
+  var shrinkSteps = CIRCLE_RESOLUTION;
   var currentCircle = {
     radius: WALLRADIUS,
     position: Vec2(0, 0)
@@ -57,7 +59,7 @@ function Physics(ui) {
   }
 
   function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys, playerIcon);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -98,7 +100,7 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
+    //console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -119,7 +121,7 @@ function Physics(ui) {
 
     if (!shrinkSteps) {
       newCircle = createNewCircle(currentCircle);
-      shrinkSteps = NUMSTEPS;
+      shrinkSteps = CIRCLE_RESOLUTION;
     } else {
 
       currentCircle = shrinkCircle(currentCircle, newCircle);
@@ -243,10 +245,10 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-  Stage.image ('player')
+  playerIcon = Stage.image ('player')
   .appendTo(stage)
   .pin({
-    align: 0.5, //0 for top left, 1 for to right
+    //align: 0.5, //0 for top left, 1 for to right
     scale : 0.25
   }); 
 

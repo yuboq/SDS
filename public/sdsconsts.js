@@ -7,5 +7,14 @@ module.exports = {
     Vec2 : planck.Vec2,
     rand : function(value) {
       return (Math.random() - 0.5) * (value || 1);
-    }
+    },
+    SPACE_WIDTH: 16,
+    SPACE_HEIGHT: 9,
+    BOT_NUM: 5,
+    CIRCLE_RESOLUTION : 100,
+    SIZE : 0.30,
+    WALLRADIUS : 5,
+    WORLD_WIDTH: 1000,
+    WORLD_HEIGHT: 1000,
+    GOD_MODE: true
 };

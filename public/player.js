@@ -3,18 +3,22 @@ const {
   INITIAL_SICK_RATE,
   MIN_HEALTH,
   MAX_HEALTH,
-  pl,
   Vec2,
-  rand
+  rand,
+  SPACE_HEIGHT,
+  SPACE_WIDTH,
+  WALLRADIUS,
+  GOD_MODE
 } = require('./sdsconsts.js');
 
 class Player {
-  constructor(playerBody, isHuman = false, activeKeys = []) {
+  constructor(playerBody, isHuman = false, activeKeys = [], playerIcon) {
     this._isHuman = isHuman;
     this._playerBody = playerBody;
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
+    this._playerIcon = playerIcon;
   }
 
   getWorldCenter() {
@@ -26,6 +30,10 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
+    if (GOD_MODE) {
+      this._health = 100;
+      return;
+    }
     this._health += amount;
   }
 
@@ -76,12 +84,23 @@ class Player {
         var f = Vec2(0.0, -10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
-      }
-      if (this._activeKeys.down && !this._activeKeys.up) {
+      } else if (this._activeKeys.down && !this._activeKeys.up) {
         var f = Vec2(0.0, 10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
       }
+
+      this._playerIcon.pin ({
+        handle: 0.5,
+        alignX: this.getPosition().x,
+        alignY: this.getPosition().y,
+
+        //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+        //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+        rotation: this._playerBody.getAngle()
+      })
+
+      console.log (this._playerBody.getWorldPoint(Vec2 (0, 0.30)));
     }
   }
 
