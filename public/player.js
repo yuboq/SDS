@@ -3,9 +3,12 @@ const {
   INITIAL_SICK_RATE,
   MIN_HEALTH,
   MAX_HEALTH,
-  pl,
   Vec2,
-  rand
+  rand,
+  SPACE_HEIGHT,
+  SPACE_WIDTH,
+  WALLRADIUS,
+  GOD_MODE
 } = require('./sdsconsts.js');
 
 class Player {
@@ -15,6 +18,9 @@ class Player {
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
+    this._playerIcon = Stage.image(isHuman? 'human' : 'bot')
+      .appendTo(window.world);
+    this._playerIcon.pin({scale: 0.00065, handle: 0.5})
   }
 
   getWorldCenter() {
@@ -26,6 +32,10 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
+    if (false) {
+      this._health = 100;
+      return;
+    }
     this._health += amount;
   }
 
@@ -59,6 +69,18 @@ class Player {
     } else {
       this.updateBot(dt);
     }
+    this.updateIcon();
+  }
+
+  updateIcon() {
+    this._playerIcon.pin ({
+      offsetX: this.getPosition().x,
+      offsetY: this.getPosition().y,
+
+      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+      rotation: this._playerBody.getAngle()
+    })
   }
 
   updateHuman(dt) {
@@ -76,8 +98,7 @@ class Player {
         var f = Vec2(0.0, -10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
-      }
-      if (this._activeKeys.down && !this._activeKeys.up) {
+      } else if (this._activeKeys.down && !this._activeKeys.up) {
         var f = Vec2(0.0, 10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);

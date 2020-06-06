@@ -2,19 +2,19 @@ const Player = require ('./player.js');
 const {
   pl,
   Vec2,
-  rand
+  rand,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  BOT_NUM,
+  CIRCLE_RESOLUTION,
+  SIZE,
+  WALLRADIUS
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
   const PLAYER = 2;
   const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
 
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -36,7 +36,7 @@ function Physics(ui) {
   var globalTime = 0;
   var lastShrinkTime = globalTime;
   var updateHealthTime = globalTime;
-  var shrinkSteps = NUMSTEPS;
+  var shrinkSteps = CIRCLE_RESOLUTION;
   var currentCircle = {
     radius: WALLRADIUS,
     position: Vec2(0, 0)
@@ -98,7 +98,7 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
+    //console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -119,7 +119,7 @@ function Physics(ui) {
 
     if (!shrinkSteps) {
       newCircle = createNewCircle(currentCircle);
-      shrinkSteps = NUMSTEPS;
+      shrinkSteps = CIRCLE_RESOLUTION;
     } else {
 
       currentCircle = shrinkCircle(currentCircle, newCircle);
@@ -252,6 +252,7 @@ Stage(function (stage) {
     40: 'down'
   };
 
+
   var physics = new Physics({
     startGame: startGame,
     endGame: endGame,
@@ -281,6 +282,8 @@ Stage(function (stage) {
     })
     .appendTo(stage)
     .hide();
+
+  window.world = world;
 
   stage.tick(physics.tick);
 
@@ -316,10 +319,15 @@ Stage(function (stage) {
     endScreen.hide();
   }
 
+  function addImage (){
+
+  }
+
   function endGame() {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
+    world.empty();
     endScreen.show();
   }
 
@@ -337,6 +345,17 @@ Stage(function (stage) {
 });
 
 Stage({
+  name : 'player',
+  image : './images/players.png',
+  textures : {
+    human : { x : 0, y : 0, width : 1000, height : 1000 },
+    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
+  }
+});
+
+
+Stage ({
+
   textures: {
     text: function (d) {
       d += '';

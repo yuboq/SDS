@@ -3,19 +3,19 @@ const Player = require ('./player.js');
 const {
   pl,
   Vec2,
-  rand
+  rand,
+  SPACE_WIDTH,
+  SPACE_HEIGHT,
+  BOT_NUM,
+  CIRCLE_RESOLUTION,
+  SIZE,
+  WALLRADIUS
 } = require('./sdsconsts.js');
 
 function Physics(ui) {
   const PLAYER = 2;
   const WALLS = 4;
-  var SPACE_WIDTH = 16;
-  var SPACE_HEIGHT = 9;
-  const NUMSTEPS = 100;
-  const BOT_NUM = 5;
 
-  var SIZE = 0.30;
-  var WALLRADIUS = 5;
   var state = {
     gameover: true,
     startGame: function () {
@@ -37,7 +37,7 @@ function Physics(ui) {
   var globalTime = 0;
   var lastShrinkTime = globalTime;
   var updateHealthTime = globalTime;
-  var shrinkSteps = NUMSTEPS;
+  var shrinkSteps = CIRCLE_RESOLUTION;
   var currentCircle = {
     radius: WALLRADIUS,
     position: Vec2(0, 0)
@@ -99,7 +99,7 @@ function Physics(ui) {
   }
 
   function updateHealth() {
-    console.log (yourPlayer.health);
+    //console.log (yourPlayer.health);
     if (Math.abs (globalTime - updateHealthTime) < 100) {
       return;
     }
@@ -120,7 +120,7 @@ function Physics(ui) {
 
     if (!shrinkSteps) {
       newCircle = createNewCircle(currentCircle);
-      shrinkSteps = NUMSTEPS;
+      shrinkSteps = CIRCLE_RESOLUTION;
     } else {
 
       currentCircle = shrinkCircle(currentCircle, newCircle);
@@ -253,6 +253,7 @@ Stage(function (stage) {
     40: 'down'
   };
 
+
   var physics = new Physics({
     startGame: startGame,
     endGame: endGame,
@@ -282,6 +283,8 @@ Stage(function (stage) {
     })
     .appendTo(stage)
     .hide();
+
+  window.world = world;
 
   stage.tick(physics.tick);
 
@@ -317,10 +320,15 @@ Stage(function (stage) {
     endScreen.hide();
   }
 
+  function addImage (){
+
+  }
+
   function endGame() {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
+    world.empty();
     endScreen.show();
   }
 
@@ -338,6 +346,17 @@ Stage(function (stage) {
 });
 
 Stage({
+  name : 'player',
+  image : './images/players.png',
+  textures : {
+    human : { x : 0, y : 0, width : 1000, height : 1000 },
+    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
+  }
+});
+
+
+Stage ({
+
   textures: {
     text: function (d) {
       d += '';
@@ -361,9 +380,12 @@ const {
   INITIAL_SICK_RATE,
   MIN_HEALTH,
   MAX_HEALTH,
-  pl,
   Vec2,
-  rand
+  rand,
+  SPACE_HEIGHT,
+  SPACE_WIDTH,
+  WALLRADIUS,
+  GOD_MODE
 } = require('./sdsconsts.js');
 
 class Player {
@@ -373,6 +395,9 @@ class Player {
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
+    this._playerIcon = Stage.image(isHuman? 'human' : 'bot')
+      .appendTo(window.world);
+    this._playerIcon.pin({scale: 0.00065, handle: 0.5})
   }
 
   getWorldCenter() {
@@ -384,6 +409,10 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
+    if (false) {
+      this._health = 100;
+      return;
+    }
     this._health += amount;
   }
 
@@ -417,6 +446,18 @@ class Player {
     } else {
       this.updateBot(dt);
     }
+    this.updateIcon();
+  }
+
+  updateIcon() {
+    this._playerIcon.pin ({
+      offsetX: this.getPosition().x,
+      offsetY: this.getPosition().y,
+
+      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+      rotation: this._playerBody.getAngle()
+    })
   }
 
   updateHuman(dt) {
@@ -434,8 +475,7 @@ class Player {
         var f = Vec2(0.0, -10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
-      }
-      if (this._activeKeys.down && !this._activeKeys.up) {
+      } else if (this._activeKeys.down && !this._activeKeys.up) {
         var f = Vec2(0.0, 10.0);
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
@@ -462,7 +502,16 @@ module.exports = {
     Vec2 : planck.Vec2,
     rand : function(value) {
       return (Math.random() - 0.5) * (value || 1);
-    }
+    },
+    SPACE_WIDTH: 16,
+    SPACE_HEIGHT: 9,
+    BOT_NUM: 5,
+    CIRCLE_RESOLUTION : 100,
+    SIZE : 0.30,
+    WALLRADIUS : 5,
+    WORLD_WIDTH: 1000,
+    WORLD_HEIGHT: 1000,
+    GOD_MODE: true
 };
 
 },{}]},{},[1]);
