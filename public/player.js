@@ -12,13 +12,15 @@ const {
 } = require('./sdsconsts.js');
 
 class Player {
-  constructor(playerBody, isHuman = false, activeKeys = [], playerIcon) {
+  constructor(playerBody, isHuman = false, activeKeys = []) {
     this._isHuman = isHuman;
     this._playerBody = playerBody;
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
-    this._playerIcon = playerIcon;
+    this._playerIcon = Stage.image(isHuman? 'human' : 'bot')
+      .appendTo(window.world);
+    this._playerIcon.pin({scale: 0.00065, handle: 0.5})
   }
 
   getWorldCenter() {
@@ -30,7 +32,7 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
-    if (GOD_MODE) {
+    if (false) {
       this._health = 100;
       return;
     }
@@ -67,6 +69,18 @@ class Player {
     } else {
       this.updateBot(dt);
     }
+    this.updateIcon();
+  }
+
+  updateIcon() {
+    this._playerIcon.pin ({
+      offsetX: this.getPosition().x,
+      offsetY: this.getPosition().y,
+
+      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+      rotation: this._playerBody.getAngle()
+    })
   }
 
   updateHuman(dt) {
@@ -89,18 +103,6 @@ class Player {
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
       }
-
-      this._playerIcon.pin ({
-        handle: 0.5,
-        alignX: this.getPosition().x,
-        alignY: this.getPosition().y,
-
-        //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
-        //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
-        rotation: this._playerBody.getAngle()
-      })
-
-      console.log (this._playerBody.getWorldPoint(Vec2 (0, 0.30)));
     }
   }
 

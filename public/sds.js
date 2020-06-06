@@ -1,6 +1,4 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-var playerIcon;
-
 const Player = require ('./player.js');
 const {
   pl,
@@ -60,7 +58,7 @@ function Physics(ui) {
   }
 
   function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys, playerIcon);
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -246,12 +244,6 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-  playerIcon = Stage.image ('player')
-  .appendTo(stage)
-  .pin({
-    //align: 0.5, //0 for top left, 1 for to right
-    scale : 0.25
-  }); 
 
   var KEY_NAMES = {
     32: 'start',
@@ -261,7 +253,7 @@ Stage(function (stage) {
     40: 'down'
   };
 
-  
+
   var physics = new Physics({
     startGame: startGame,
     endGame: endGame,
@@ -291,6 +283,8 @@ Stage(function (stage) {
     })
     .appendTo(stage)
     .hide();
+
+  window.world = world;
 
   stage.tick(physics.tick);
 
@@ -327,13 +321,14 @@ Stage(function (stage) {
   }
 
   function addImage (){
-    
+
   }
 
   function endGame() {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
+    world.empty();
     endScreen.show();
   }
 
@@ -352,12 +347,16 @@ Stage(function (stage) {
 
 Stage({
   name : 'player',
-  image : './images/players.png'
+  image : './images/players.png',
+  textures : {
+    human : { x : 0, y : 0, width : 1000, height : 1000 },
+    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
+  }
 });
 
 
 Stage ({
-  
+
   textures: {
     text: function (d) {
       d += '';
@@ -390,13 +389,15 @@ const {
 } = require('./sdsconsts.js');
 
 class Player {
-  constructor(playerBody, isHuman = false, activeKeys = [], playerIcon) {
+  constructor(playerBody, isHuman = false, activeKeys = []) {
     this._isHuman = isHuman;
     this._playerBody = playerBody;
     this._health = INITIAL_HEALTH;
     this._sickRate = INITIAL_SICK_RATE;
     this._activeKeys = activeKeys;
-    this._playerIcon = playerIcon;
+    this._playerIcon = Stage.image(isHuman? 'human' : 'bot')
+      .appendTo(window.world);
+    this._playerIcon.pin({scale: 0.00065, handle: 0.5})
   }
 
   getWorldCenter() {
@@ -408,7 +409,7 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
-    if (GOD_MODE) {
+    if (false) {
       this._health = 100;
       return;
     }
@@ -445,6 +446,18 @@ class Player {
     } else {
       this.updateBot(dt);
     }
+    this.updateIcon();
+  }
+
+  updateIcon() {
+    this._playerIcon.pin ({
+      offsetX: this.getPosition().x,
+      offsetY: this.getPosition().y,
+
+      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
+      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
+      rotation: this._playerBody.getAngle()
+    })
   }
 
   updateHuman(dt) {
@@ -467,18 +480,6 @@ class Player {
         var p = this.getWorldCenter();
         this.applyLinearImpulse(f, p, true);
       }
-
-      this._playerIcon.pin ({
-        handle: 0.5,
-        alignX: this.getPosition().x,
-        alignY: this.getPosition().y,
-
-        //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
-        //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
-        rotation: this._playerBody.getAngle()
-      })
-
-      console.log (this._playerBody.getWorldPoint(Vec2 (0, 0.30)));
     }
   }
 

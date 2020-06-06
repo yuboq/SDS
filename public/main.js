@@ -1,5 +1,3 @@
-var playerIcon;
-
 const Player = require ('./player.js');
 const {
   pl,
@@ -59,7 +57,7 @@ function Physics(ui) {
   }
 
   function createPlayer (x = 0, y = 0, isHuman) {
-    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys, playerIcon);
+    return new Player(setupPlayerBody (x,y), isHuman, ui.activeKeys);
   }
 
   function setupPlayerBody(x = 0, y = 0) {
@@ -245,12 +243,6 @@ function Physics(ui) {
 
 Stage(function (stage) {
   var activeKeys = {};
-  playerIcon = Stage.image ('player')
-  .appendTo(stage)
-  .pin({
-    //align: 0.5, //0 for top left, 1 for to right
-    scale : 0.25
-  }); 
 
   var KEY_NAMES = {
     32: 'start',
@@ -260,7 +252,7 @@ Stage(function (stage) {
     40: 'down'
   };
 
-  
+
   var physics = new Physics({
     startGame: startGame,
     endGame: endGame,
@@ -290,6 +282,8 @@ Stage(function (stage) {
     })
     .appendTo(stage)
     .hide();
+
+  window.world = world;
 
   stage.tick(physics.tick);
 
@@ -326,13 +320,14 @@ Stage(function (stage) {
   }
 
   function addImage (){
-    
+
   }
 
   function endGame() {
     startScreen.hide();
     m_state = END_STATE;
     world.hide();
+    world.empty();
     endScreen.show();
   }
 
@@ -351,12 +346,16 @@ Stage(function (stage) {
 
 Stage({
   name : 'player',
-  image : './images/players.png'
+  image : './images/players.png',
+  textures : {
+    human : { x : 0, y : 0, width : 1000, height : 1000 },
+    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
+  }
 });
 
 
 Stage ({
-  
+
   textures: {
     text: function (d) {
       d += '';
