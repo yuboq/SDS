@@ -5,9 +5,6 @@ const {
   MAX_HEALTH,
   Vec2,
   rand,
-  SPACE_HEIGHT,
-  SPACE_WIDTH,
-  WALLRADIUS,
   GOD_MODE
 } = require('./sdsconsts.js');
 
@@ -32,7 +29,8 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
-    if (false) {
+    debugger;
+    if (GOD_MODE) {
       this._health = 100;
       return;
     }
@@ -76,9 +74,6 @@ class Player {
     this._playerIcon.pin ({
       offsetX: this.getPosition().x,
       offsetY: this.getPosition().y,
-
-      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
-      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
       rotation: this._playerBody.getAngle()
     })
   }

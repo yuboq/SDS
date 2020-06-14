@@ -1,13 +1,9 @@
 # Bugs/TODO
-- Attach sprites to players
-  - player icon  1:1 attachement to player body
-  - Use part of the png instead of entire image to represent player
-  - attach enemy icons to enemies
 
 - Circle reset on game over
-- Add color to represent your dude
+- Add health indication for player/bots (health bar or glowing circle?)
 - Add sprites for healthkits
-- Bot disappears on death
+- Bot disappears on death (when health hits 0)
 - Remove collision from circle: player takes extra damage if outside circle
 - AOE cough cone
 

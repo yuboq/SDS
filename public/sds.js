@@ -1,4 +1,175 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+const { KEY_NAMES } = require ('./sdsconsts.js');
+
+
+class InputHandler {
+  constructor (){
+    this._activeKeys = {};
+    this._alistner = {};
+
+    document.onkeydown = function (evt) {
+      debugger;
+      this._activeKeys[KEY_NAMES[evt.keyCode]] = true;
+
+      this._alistener [KEY_NAMES[evt.keyCode]].forEach(element => 
+        element());
+
+    };
+    
+    document.onkeyup = function (evt) {
+      this._activeKeys[KEY_NAMES[evt.keyCode]] = false;
+    };
+
+  }
+  
+  addListener (activeKey, somefunction) {
+
+    if (!this._alistener [activeKey]) {
+      this._alistener [activeKey] = [somefunction];
+    } else {
+      this._alistener [activeKey].push (somefunction);
+    }
+  }
+
+  removeListener (activeKey, somefunction) {
+    var currKey = this._alistener[activeKey];
+    if (!currKey) {
+      return
+    } else {
+      var index = currKey.indexOf (somefunction);
+      if (index > -1) {
+        currKey.splice (index, 1);
+      }
+    }
+  }
+
+  getActiveKeys () {
+    return this._activeKeys;
+  }
+}
+
+
+
+module.exports = new InputHandler;
+},{"./sdsconsts.js":5}],2:[function(require,module,exports){
+
+const Physics = require ('./physics.js');
+const InputHandler = require ('./inputs.js');
+
+
+Stage(function (stage) {
+
+
+  var physics = new Physics({
+    startGame: startGame,
+    endGame: endGame,
+    activeKeys: InputHandler.getActiveKeys()
+  });
+
+
+  var world, meta;
+  stage.background('#222222');
+  stage.on('viewport', function (size) {
+    meta.pin({
+      scaleMode: 'in-pad',
+      scaleWidth: size.width,
+      scaleHeight: size.height
+    });
+    world.pin({
+      scaleMode: 'in-pad',
+      scaleWidth: size.width,
+      scaleHeight: size.height
+    });
+  });
+  //
+  world = new Stage
+    .planck(physics.world, { ratio: 80 })
+    .pin({
+      handle: -0.5,
+      width: physics.spaceWidth,
+      height: physics.spaceHeight
+    })
+    .appendTo(stage)
+    .hide();
+
+  window.world = world;
+
+  stage.tick(physics.tick);
+
+  START_STATE = 1;
+  GAME_STATE = 2;
+  END_STATE = 3;
+  m_state = START_STATE;
+
+  meta = Stage
+    .create()
+    .pin({ width: 1000, height: 1000 })
+    .appendTo(stage);
+
+  startScreen = Stage
+    .string('text')
+    .value('Start!')
+    .pin({ offsetX: 500, offsetY: 500, scale: 1 })
+    .appendTo(meta)
+    .show();
+
+  endScreen = Stage
+    .string('text')
+    .value('End!')
+    .pin({ offsetX: 1, offsetY: 4, scale: 1 })
+    .appendTo(meta)
+    .hide();
+
+  function startGame(old_start) {
+
+    startScreen.hide();
+    m_state = GAME_STATE;
+    world.show();
+    physics.start();
+    endScreen.hide();
+    
+  }
+
+  function endGame() {
+    startScreen.hide();
+    m_state = END_STATE;
+    world.hide();
+    world.empty();
+    endScreen.show();
+  }
+
+
+});
+Stage({
+  name : 'player',
+  image : './images/players.png',
+  textures : {
+    human : { x : 0, y : 0, width : 1000, height : 1000 },
+    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
+  }
+});
+
+
+Stage ({
+
+  textures: {
+    text: function (d) {
+      d += '';
+      return Stage.canvas(function (ctx) {
+        var ratio = 2;
+        this.size(16, 24, ratio);
+        ctx.scale(ratio, ratio);
+        ctx.font = 'bold 24px monospace';
+        ctx.fillStyle = '#ddd';
+        ctx.textBaseline = 'top';
+        ctx.fillText(d, 0, 1);
+      });
+    }
+
+  }
+});
+
+},{"./inputs.js":1,"./physics.js":3}],3:[function(require,module,exports){
 const Player = require ('./player.js');
 const {
   pl,
@@ -9,8 +180,9 @@ const {
   BOT_NUM,
   CIRCLE_RESOLUTION,
   SIZE,
-  WALLRADIUS
+  WALL_RADIUS
 } = require('./sdsconsts.js');
+
 
 function Physics(ui) {
   const PLAYER = 2;
@@ -39,7 +211,7 @@ function Physics(ui) {
   var updateHealthTime = globalTime;
   var shrinkSteps = CIRCLE_RESOLUTION;
   var currentCircle = {
-    radius: WALLRADIUS,
+    radius: WALL_RADIUS,
     position: Vec2(0, 0)
   };
   var newCircle = currentCircle;
@@ -174,8 +346,8 @@ function Physics(ui) {
       while (Math.abs(x - yourPosition.x) < SIZE * 2
         && Math.abs(y - yourPosition.y) < SIZE * 2) {
         var angle = rand(Math.PI * 2);
-        x = rand(WALLRADIUS - SIZE) * Math.sin(angle);
-        y = rand(WALLRADIUS - SIZE) * Math.cos(angle);
+        x = rand(WALL_RADIUS - SIZE) * Math.sin(angle);
+        y = rand(WALL_RADIUS - SIZE) * Math.cos(angle);
       }
       otherBodies.push(createPlayer (x,y, false));
     }
@@ -242,139 +414,8 @@ function Physics(ui) {
   this.ratio = 64;
 }
 
-Stage(function (stage) {
-  var activeKeys = {};
-
-  var KEY_NAMES = {
-    32: 'start',
-    37: 'right',
-    38: 'up',
-    39: 'left',
-    40: 'down'
-  };
-
-
-  var physics = new Physics({
-    startGame: startGame,
-    endGame: endGame,
-    activeKeys: activeKeys
-  });
-  var world, meta;
-  stage.background('#222222');
-  stage.on('viewport', function (size) {
-    meta.pin({
-      scaleMode: 'in-pad',
-      scaleWidth: size.width,
-      scaleHeight: size.height
-    });
-    world.pin({
-      scaleMode: 'in-pad',
-      scaleWidth: size.width,
-      scaleHeight: size.height
-    });
-  });
-  //
-  world = new Stage
-    .planck(physics.world, { ratio: 80 })
-    .pin({
-      handle: -0.5,
-      width: physics.spaceWidth,
-      height: physics.spaceHeight
-    })
-    .appendTo(stage)
-    .hide();
-
-  window.world = world;
-
-  stage.tick(physics.tick);
-
-  START_STATE = 1;
-  GAME_STATE = 2;
-  END_STATE = 3;
-  m_state = START_STATE;
-
-  meta = Stage
-    .create()
-    .pin({ width: 1000, height: 1000 })
-    .appendTo(stage);
-
-  startScreen = Stage
-    .string('text')
-    .value('Start!')
-    .pin({ offsetX: 500, offsetY: 500, scale: 1 })
-    .appendTo(meta)
-    .show();
-
-  endScreen = Stage
-    .string('text')
-    .value('End!')
-    .pin({ offsetX: 1, offsetY: 4, scale: 1 })
-    .appendTo(meta)
-    .hide();
-
-  function startGame() {
-    startScreen.hide();
-    m_state = GAME_STATE;
-    world.show();
-    physics.start();
-    endScreen.hide();
-  }
-
-  function addImage (){
-
-  }
-
-  function endGame() {
-    startScreen.hide();
-    m_state = END_STATE;
-    world.hide();
-    world.empty();
-    endScreen.show();
-  }
-
-  document.onkeydown = function (evt) {
-    activeKeys[KEY_NAMES[evt.keyCode]] = true;
-  };
-
-  document.onkeyup = function (evt) {
-    var old_start = activeKeys['start']
-    activeKeys[KEY_NAMES[evt.keyCode]] = false;
-    if (old_start && !activeKeys['start'] && m_state != GAME_STATE) {
-      startGame();
-    }
-  };
-});
-
-Stage({
-  name : 'player',
-  image : './images/players.png',
-  textures : {
-    human : { x : 0, y : 0, width : 1000, height : 1000 },
-    bot : { x : 1100, y : 0, width : 1000, height : 1000 },
-  }
-});
-
-
-Stage ({
-
-  textures: {
-    text: function (d) {
-      d += '';
-      return Stage.canvas(function (ctx) {
-        var ratio = 2;
-        this.size(16, 24, ratio);
-        ctx.scale(ratio, ratio);
-        ctx.font = 'bold 24px monospace';
-        ctx.fillStyle = '#ddd';
-        ctx.textBaseline = 'top';
-        ctx.fillText(d, 0, 1);
-      });
-    }
-
-  }
-});
-
-},{"./player.js":2,"./sdsconsts.js":3}],2:[function(require,module,exports){
+module.exports = Physics;
+},{"./player.js":4,"./sdsconsts.js":5}],4:[function(require,module,exports){
 const {
   INITIAL_HEALTH,
   INITIAL_SICK_RATE,
@@ -382,9 +423,6 @@ const {
   MAX_HEALTH,
   Vec2,
   rand,
-  SPACE_HEIGHT,
-  SPACE_WIDTH,
-  WALLRADIUS,
   GOD_MODE
 } = require('./sdsconsts.js');
 
@@ -409,7 +447,8 @@ class Player {
   }
 
   addHealth(amount = ((-1) * this._sickRate)) {
-    if (false) {
+    debugger;
+    if (GOD_MODE) {
       this._health = 100;
       return;
     }
@@ -453,9 +492,6 @@ class Player {
     this._playerIcon.pin ({
       offsetX: this.getPosition().x,
       offsetY: this.getPosition().y,
-
-      //offsetX: ((this._playerBody.getPosition().x+ SPACE_WIDTH)/2.0)*(1000/(WALLRADIUS*2)),
-      //offsetY: ((this._playerBody.getPosition().y) + SPACE_HEIGHT/2.0) * (1000/(WALLRADIUS*2)),
       rotation: this._playerBody.getAngle()
     })
   }
@@ -492,7 +528,7 @@ class Player {
 
 module.exports = Player;
 
-},{"./sdsconsts.js":3}],3:[function(require,module,exports){
+},{"./sdsconsts.js":5}],5:[function(require,module,exports){
 module.exports = {
     INITIAL_HEALTH : 100,
     INITIAL_SICK_RATE : 1,
@@ -508,10 +544,17 @@ module.exports = {
     BOT_NUM: 5,
     CIRCLE_RESOLUTION : 100,
     SIZE : 0.30,
-    WALLRADIUS : 5,
+    WALL_RADIUS : 5,
     WORLD_WIDTH: 1000,
     WORLD_HEIGHT: 1000,
-    GOD_MODE: true
-};
+    GOD_MODE: true,
 
-},{}]},{},[1]);
+    KEY_NAMES : {
+      32: 'space',
+      37: 'right',
+      38: 'up',
+      39: 'left',
+      40: 'down'
+    }
+};
+},{}]},{},[2]);

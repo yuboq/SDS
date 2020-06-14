@@ -13,8 +13,16 @@ module.exports = {
     BOT_NUM: 5,
     CIRCLE_RESOLUTION : 100,
     SIZE : 0.30,
-    WALLRADIUS : 5,
+    WALL_RADIUS : 5,
     WORLD_WIDTH: 1000,
     WORLD_HEIGHT: 1000,
-    GOD_MODE: true
+    GOD_MODE: true,
+
+    KEY_NAMES : {
+      32: 'space',
+      37: 'right',
+      38: 'up',
+      39: 'left',
+      40: 'down'
+    }
 };
